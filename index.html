@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>🎸 Quick File Host (Catbox)</title>
+  <title>Quick File Uploader</title>
   <style>
     body {
       font-family: sans-serif;
@@ -11,7 +11,7 @@
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      background: #eef2f7;
+      background: #f0f2f5;
       margin: 0;
     }
     .container {
@@ -36,31 +36,25 @@
       font-size: 1rem;
     }
     button:disabled {
-      background: #aaa;
+      background: #999;
       cursor: not-allowed;
     }
     #link {
       margin-top: 1rem;
       word-break: break-all;
-      color: #111;
-    }
-    .note {
-      font-size: 0.85rem;
-      color: #555;
-      margin-top: 1.5rem;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>📤 Upload to Catbox</h1>
+    <h1>📤 Upload a File</h1>
     <input id="fileInput" type="file" />
     <br />
-    <button id="uploadBtn" disabled>Upload</button>
+    <button id="uploadBtn" disabled>Upload to file.io</button>
     <div id="link"></div>
-    <p class="note">
-      Files ≤ 200 MB are stored indefinitely (no expiry).<br/>
-      **No virus scans**—upload at your own risk.
+    <p style="font-size: 0.85rem; color: #555; margin-top: 1.5rem;">
+      Files are stored temporarily on file.io (no virus scanning). <br/>
+      Link expires automatically after first download or 14 days (default).
     </p>
   </div>
 
@@ -69,10 +63,10 @@
     const uploadBtn = document.getElementById('uploadBtn');
     const linkDiv = document.getElementById('link');
 
-    // Enable upload button only when a file is selected
+    // Enable the button only after a file is selected
     fileInput.addEventListener('change', () => {
       uploadBtn.disabled = !fileInput.files.length;
-      linkDiv.textContent = '';
+      linkDiv.textContent = ''; // clear previous link
     });
 
     uploadBtn.addEventListener('click', async () => {
@@ -81,37 +75,34 @@
 
       uploadBtn.disabled = true;
       uploadBtn.textContent = 'Uploading…';
-      linkDiv.textContent = '';
 
       try {
-        // Build FormData for Catbox API
+        // file.io endpoint for simple uploads:
+        // You can POST to https://file.io with form‐data key “file”
         const formData = new FormData();
-        formData.append('reqtype', 'fileupload');
-        // 'fileToUpload' is exactly what Catbox expects
-        formData.append('fileToUpload', file);
+        formData.append('file', file);
 
-        const response = await fetch('https://catbox.moe/user/api.php', {
+        const response = await fetch('https://file.io?expires=14d', {
           method: 'POST',
           body: formData
         });
+        const data = await response.json();
 
-        // Catbox returns a plain-text URL on success
-        const url = await response.text();
-
-        if (response.ok && url.startsWith('https')) {
+        if (data.success && data.link) {
+          // Show the generated link
           linkDiv.innerHTML = `
-            <strong>Your link:</strong><br/>
-            <a href="${url.trim()}" target="_blank">${url.trim()}</a>
+            <strong>Your shareable link:</strong><br/>
+            <a href="${data.link}" target="_blank">${data.link}</a>
           `;
         } else {
-          linkDiv.textContent = '❗ Failed to upload.';
+          linkDiv.textContent = '❗❗ Upload failed. Try again.';
         }
       } catch (err) {
         console.error(err);
-        linkDiv.textContent = '❗ Error during upload.';
+        linkDiv.textContent = '❗❗ Error uploading file.';
       } finally {
         uploadBtn.disabled = false;
-        uploadBtn.textContent = 'Upload';
+        uploadBtn.textContent = 'Upload to file.io';
       }
     });
   </script>
